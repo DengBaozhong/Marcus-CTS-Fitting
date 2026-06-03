@@ -8,10 +8,11 @@ import atexit
 import shutil
 import os
 import webbrowser
+from io import StringIO
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,6 @@ HC_EV_NM = 1239.841984
 KB_EV_K = 8.617333262145e-5
 APP_DIR = Path(__file__).resolve().parent
 SETTINGS_PATH = APP_DIR / "marcus_ct_settings.json"
-RESULTS_DIR = APP_DIR / "fit_results"
 UPLOADS_DIR = APP_DIR / "uploaded_spectra"
 PLOTLY_JS = Path(plotly.__file__).resolve().parent / "package_data" / "plotly.min.js"
 
@@ -580,7 +580,7 @@ def padded_series(values: np.ndarray | pd.Series | list[float], length: int) -> 
     return series.reset_index(drop=True)
 
 
-def save_csv(settings: dict, metrics: dict | None, filename_prefix: str = "") -> Path:
+def build_result_dataframe(settings: dict) -> pd.DataFrame:
     require_ready_for_mode(settings)
     eqe = read_spectrum(settings["eqe_path"])
     el = read_spectrum(settings["el_path"]) if settings["fit_mode"] == "EQE + EL" else read_spectrum_optional(settings.get("el_path", ""))
@@ -627,11 +627,19 @@ def save_csv(settings: dict, metrics: dict | None, filename_prefix: str = "") ->
             fit_value.iloc[idx] = value
     out["fit_parameter"] = fit_parameter
     out["fit_value"] = fit_value
-    RESULTS_DIR.mkdir(exist_ok=True)
+    return out
+
+
+def result_filename(filename_prefix: str = "") -> str:
     prefix = safe_filename_prefix(filename_prefix)
-    path = RESULTS_DIR / f"{prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    out.to_csv(path, index=False, encoding="utf-8-sig")
-    return path
+    return f"{prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+
+def csv_download_bytes(settings: dict, filename_prefix: str = "") -> tuple[str, bytes]:
+    out = build_result_dataframe(settings)
+    buffer = StringIO()
+    out.to_csv(buffer, index=False)
+    return result_filename(filename_prefix), ("\ufeff" + buffer.getvalue()).encode("utf-8")
 
 
 class AppState:
@@ -693,8 +701,8 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/save":
                 APP_STATE.settings = sanitize_settings(migrate_settings(payload.get("settings", APP_STATE.settings)))
                 save_settings(APP_STATE.settings)
-                path_out = save_csv(APP_STATE.settings, APP_STATE.metrics, payload.get("filename_prefix", ""))
-                self.send_json(state_payload(APP_STATE.settings, APP_STATE.metrics, f"Saved: {path_out}"))
+                filename, body = csv_download_bytes(APP_STATE.settings, payload.get("filename_prefix", ""))
+                self.send_download(filename, body)
             else:
                 self.send_error(404)
         except Exception as exc:
@@ -725,6 +733,16 @@ class Handler(BaseHTTPRequestHandler):
     def send_bytes(self, body: bytes, content_type: str | None = None) -> None:
         self.send_response(200)
         self.send_header("Content-Type", content_type or mimetypes.guess_type(self.path)[0] or "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def send_download(self, filename: str, body: bytes) -> None:
+        safe_name = safe_filename_prefix(Path(filename).stem) + ".csv"
+        ascii_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", safe_name).strip("._-") or "marcus_ct_fit.csv"
+        self.send_response(200)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(safe_name)}')
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -1011,6 +1029,78 @@ INDEX_HTML = r"""
         req.onerror = () => reject(new Error('Request failed'));
         req.send(body ? JSON.stringify(body) : null);
       });
+    }
+
+    function filenameFromDisposition(disposition) {
+      const text = String(disposition || '');
+      const utf8 = text.match(/filename\\*=UTF-8''([^;]+)/i);
+      if (utf8) {
+        try { return decodeURIComponent(utf8[1].replace(/"/g, '').trim()); }
+        catch (err) { return utf8[1].replace(/"/g, '').trim(); }
+      }
+      const ascii = text.match(/filename="?([^";]+)"?/i);
+      return ascii ? ascii[1].trim() : 'marcus_ct_fit.csv';
+    }
+
+    async function saveBlobToUser(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadFilenameSuggestion() {
+      const prefix = $('filename_prefix').value.trim() || 'marcus_ct_fit';
+      const clean = prefix.replace(/[^\w.\-]+/g, '_').replace(/^[._-]+|[._-]+$/g, '') || 'marcus_ct_fit';
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      return `${clean}_${stamp}.csv`;
+    }
+
+    async function downloadCsv() {
+      let fileHandle = null;
+      if (window.showSaveFilePicker) {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: downloadFilenameSuggestion(),
+          types: [{description: 'CSV file', accept: {'text/csv': ['.csv']}}],
+        });
+      }
+      const response = await fetch('/api/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'text/csv'},
+        body: JSON.stringify({
+          settings: readSettingsFromDom(),
+          filename_prefix: $('filename_prefix').value.trim()
+        }),
+      });
+      if (!response.ok) {
+        let message = response.statusText || 'Save failed';
+        try {
+          const data = await response.json();
+          message = data.error || message;
+        } catch (err) {
+          const text = await response.text();
+          if (text) message = text;
+        }
+        throw new Error(message);
+      }
+      const filename = filenameFromDisposition(response.headers.get('Content-Disposition'));
+      const blob = await response.blob();
+      if (fileHandle) {
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } else {
+        await saveBlobToUser(blob, filename);
+      }
+      state = await api('/api/state');
+      renderAll();
+      setMessage(`Saved to your computer: ${filename}`);
     }
 
     async function load() {
@@ -1437,11 +1527,7 @@ INDEX_HTML = r"""
     };
     $('save').onclick = async () => {
       try {
-        state = await api('/api/save', {
-          settings: readSettingsFromDom(),
-          filename_prefix: $('filename_prefix').value.trim()
-        });
-        renderAll();
+        await downloadCsv();
       } catch (err) { setMessage(err.message, true); }
     };
     $('refresh').onclick = load;

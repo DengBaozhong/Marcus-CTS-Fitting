@@ -54,7 +54,7 @@ foreach ($sample in @("EQE.csv", "EL.csv")) {
         Copy-Item -LiteralPath $samplePath -Destination $AppDir -Force
     }
 }
-New-Item -ItemType Directory -Force -Path (Join-Path $AppDir "fit_results"), (Join-Path $AppDir "uploaded_spectra") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $AppDir "uploaded_spectra") | Out-Null
 
 $HostPython = (Get-Command python -ErrorAction Stop).Source
 Write-Host "Installing Python packages into the portable runtime..." -ForegroundColor Cyan
@@ -93,7 +93,7 @@ Notes
 - This package uses the Python runtime in the local runtime folder.
 - Users do not need to install Python, numpy, pandas, scipy, or plotly.
 - This is not a PyInstaller exe; the WebUI source is still in app\marcus_ct_webui.py.
-- Saved CSV files are written to app\fit_results.
+- Saved CSV files are downloaded by the browser to the user's computer.
 - Uploaded spectra are copied to app\uploaded_spectra.
 "@
 Set-Content -LiteralPath (Join-Path $PackageDir "README.txt") -Value $Readme -Encoding UTF8
