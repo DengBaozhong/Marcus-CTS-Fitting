@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+
+.vscode/
+
+BD_optical_design_2/
+参考文献/
+ct_inline_check.js
+
+dist/
+fit_results/
+uploaded_spectra/
+marcus_ct_settings.json
+
+.env
