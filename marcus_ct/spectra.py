@@ -35,6 +35,18 @@ def save_uploaded_csv(kind: str, filename: str, content: str) -> str:
     read_spectrum(str(rel_path))
     return str(rel_path).replace("\\", "/")
 
+def remove_uploaded_csv(path: str) -> None:
+    if not path:
+        return
+    target = (APP_DIR / path).resolve()
+    uploads_root = UPLOADS_DIR.resolve()
+    try:
+        target.relative_to(uploads_root)
+    except ValueError:
+        return
+    if target.is_file():
+        target.unlink()
+
 def safe_filename_prefix(prefix: str) -> str:
     cleaned = re.sub(r"[^\w.\-]+", "_", str(prefix).strip(), flags=re.UNICODE)
     cleaned = cleaned.strip("._-")

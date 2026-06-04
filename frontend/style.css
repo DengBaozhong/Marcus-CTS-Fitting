@@ -46,6 +46,17 @@
     .seg button { border: 0; border-radius: 0; }
     .seg button.active { background: var(--red); color: white; }
     button.primary { background: var(--red); border-color: var(--red); color: white; }
+    button.small {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    button.danger {
+      color: #fecaca;
+      border-color: #7f2d35;
+      background: #25151a;
+    }
     button:hover { filter: brightness(1.08); }
     input, select {
       width: 100%;
@@ -133,8 +144,15 @@
     .mini {
       color: var(--muted);
       font-size: 13px;
-      margin-top: 6px;
       word-break: break-all;
+    }
+    .file-meta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+      margin-top: 6px;
     }
     .message {
       min-height: 24px;

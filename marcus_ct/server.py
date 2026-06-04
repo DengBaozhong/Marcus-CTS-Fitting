@@ -12,7 +12,14 @@ from .export import csv_download_bytes
 from .fitting import fit_ct
 from .payload import state_payload
 from .settings import load_settings, migrate_settings, sanitize_settings, save_settings
-from .spectra import read_spectrum, read_spectrum_optional, require_ready_for_mode, save_uploaded_csv, safe_filename_prefix
+from .spectra import (
+    read_spectrum,
+    read_spectrum_optional,
+    remove_uploaded_csv,
+    require_ready_for_mode,
+    save_uploaded_csv,
+    safe_filename_prefix,
+)
 
 
 class AppState:
@@ -61,6 +68,16 @@ class Handler(BaseHTTPRequestHandler):
                 APP_STATE.metrics = None
                 save_settings(APP_STATE.settings)
                 self.send_json(state_payload(APP_STATE.settings, APP_STATE.metrics, f"{kind} uploaded: {rel_path}"))
+            elif path == "/api/unload":
+                kind = payload.get("kind")
+                if kind not in ("EQE", "EL"):
+                    raise ValueError("Upload kind must be EQE or EL.")
+                path_key = f"{str(kind).lower()}_path"
+                remove_uploaded_csv(APP_STATE.settings.get(path_key, ""))
+                APP_STATE.settings[path_key] = ""
+                APP_STATE.metrics = None
+                save_settings(APP_STATE.settings)
+                self.send_json(state_payload(APP_STATE.settings, APP_STATE.metrics, f"{kind} unloaded."))
             elif path == "/api/fit":
                 APP_STATE.settings = sanitize_settings(migrate_settings(payload.get("settings", APP_STATE.settings)))
                 require_ready_for_mode(APP_STATE.settings)

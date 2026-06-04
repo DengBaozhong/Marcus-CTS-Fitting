@@ -17,13 +17,19 @@
         <div><strong>Choose or drop EQE CSV</strong><span id="EQE_file_label">No file loaded</span></div>
       </div>
       <input id="EQE_file" type="file" accept=".csv,text/csv">
-      <div class="mini" id="EQE_path"></div>
+      <div class="file-meta">
+        <div class="mini" id="EQE_path"></div>
+        <button class="small danger" id="EQE_unload" type="button">Unload</button>
+      </div>
       <label style="margin-top:12px">EL CSV</label>
       <div class="dropzone" id="EL_drop">
         <div><strong>Choose or drop EL CSV</strong><span id="EL_file_label">No file loaded</span></div>
       </div>
       <input id="EL_file" type="file" accept=".csv,text/csv">
-      <div class="mini" id="EL_path"></div>
+      <div class="file-meta">
+        <div class="mini" id="EL_path"></div>
+        <button class="small danger" id="EL_unload" type="button">Unload</button>
+      </div>
 
       <h2>View</h2>
       <label>Fitting mode</label>

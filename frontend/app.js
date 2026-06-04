@@ -189,6 +189,8 @@
       $('EL_file_label').textContent = elLoaded ? fileNameFromPath(state.settings.el_path) : 'No file loaded';
       $('EQE_path').textContent = eqeLoaded ? state.settings.eqe_path : '';
       $('EL_path').textContent = elLoaded ? state.settings.el_path : '';
+      $('EQE_unload').hidden = !eqeLoaded;
+      $('EL_unload').hidden = !elLoaded;
       if (eqeLoaded) {
         state.settings.fit_ranges_nm.EQE = clampRangeNm('EQE', state.settings.fit_ranges_nm.EQE);
         $('EQE_min').value = state.settings.fit_ranges_nm.EQE[0].toFixed(3);
@@ -505,6 +507,12 @@
       renderAll();
     }
 
+    async function unloadCsv(kind) {
+      setMessage(`Unloading ${kind}...`);
+      state = await api('/api/unload', {kind});
+      renderAll();
+    }
+
     function setupDropzone(kind) {
       const drop = $(`${kind}_drop`);
       const input = $(`${kind}_file`);
@@ -540,6 +548,16 @@
       try { await uploadCsv('EL', event.target.files[0]); }
       catch (err) { setMessage(err.message, true); }
       event.target.value = '';
+    });
+
+    $('EQE_unload').addEventListener('click', async () => {
+      try { await unloadCsv('EQE'); }
+      catch (err) { setMessage(err.message, true); }
+    });
+
+    $('EL_unload').addEventListener('click', async () => {
+      try { await unloadCsv('EL'); }
+      catch (err) { setMessage(err.message, true); }
     });
 
     $('fit').onclick = async () => {
