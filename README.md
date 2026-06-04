@@ -95,7 +95,15 @@ Wavelength (nm),Normalized EL (a.u.)
 
 ### Local Run
 
-维护者本地调试时，在项目目录中运行：
+普通 Windows 用户可以直接下载 Release 中的便携版压缩包：
+
+1. 打开仓库的 Releases 页面。
+2. 下载 `MarcusCT_WebUI_Portable.zip`。
+3. 解压压缩包。
+4. 双击运行 `start_webui.bat`。
+5. 程序会启动本地 WebUI，然后在浏览器中打开使用。
+
+维护者如果需要从源码本地调试，可以在项目目录中运行：
 
 ```powershell
 python -m pip install -r requirements.txt
