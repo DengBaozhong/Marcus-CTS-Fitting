@@ -116,6 +116,37 @@ python marcus_ct_webui.py
 http://localhost:8502
 ```
 
+## 项目结构
+
+当前代码已经从单文件 WebUI 拆分为轻量入口、后端模块和前端静态文件。日常运行命令仍然是：
+
+```powershell
+python marcus_ct_webui.py
+```
+
+主要文件结构如下：
+
+```text
+marcus_ct_webui.py       # 程序入口：解析参数并启动 WebUI 服务
+
+marcus_ct/
+  config.py              # 常量、默认设置、路径配置
+  settings.py            # 设置读取、保存、迁移和参数清洗
+  spectra.py             # CSV 光谱读取、上传文件处理、文件名清洗
+  model.py               # Marcus CT 模型、光谱转换和预测曲线
+  fitting.py             # least_squares 拟合和残差计算
+  payload.py             # Web API 返回给前端的数据结构
+  export.py              # 拟合结果表格和 CSV 导出
+  server.py              # HTTP Handler、API 路由和静态文件服务
+
+frontend/
+  index.html             # WebUI 页面结构
+  style.css              # WebUI 样式
+  app.js                 # 前端交互、绘图和 API 调用
+```
+
+这种拆分的目标是让计算核心、后端接口和前端界面各自独立维护。后续如果需要修改 Marcus 公式或拟合策略，优先查看 `marcus_ct/model.py` 和 `marcus_ct/fitting.py`；如果需要调整界面和交互，优先查看 `frontend/`。
+
 ### Deploy As A Persistent Web App
 
 GitHub Pages 只能托管静态网页，不能运行本程序所需的 Python 后端和 `scipy` 拟合过程。因此，本项目需要部署到支持 Python Web Service 的平台，例如 Render、Railway、Fly.io 或 Hugging Face Spaces。

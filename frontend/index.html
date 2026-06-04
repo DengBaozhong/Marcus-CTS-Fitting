@@ -1,0 +1,82 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marcus CT Spectra Fit</title>
+  <script src="/plotly.min.js"></script>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <h2>Data</h2>
+      <label>EQE CSV</label>
+      <div class="dropzone" id="EQE_drop">
+        <div><strong>Choose or drop EQE CSV</strong><span id="EQE_file_label">No file loaded</span></div>
+      </div>
+      <input id="EQE_file" type="file" accept=".csv,text/csv">
+      <div class="mini" id="EQE_path"></div>
+      <label style="margin-top:12px">EL CSV</label>
+      <div class="dropzone" id="EL_drop">
+        <div><strong>Choose or drop EL CSV</strong><span id="EL_file_label">No file loaded</span></div>
+      </div>
+      <input id="EL_file" type="file" accept=".csv,text/csv">
+      <div class="mini" id="EL_path"></div>
+
+      <h2>View</h2>
+      <label>Fitting mode</label>
+      <div class="seg" data-key="fit_mode">
+        <button data-value="EQE">EQE</button>
+        <button data-value="EQE + EL">EQE + EL</button>
+      </div>
+
+      <h2>Ranges</h2>
+      <div class="row">
+        <div><label>EQE min (nm)</label><input id="EQE_min" type="number" step="1"></div>
+        <div><label>EQE max (nm)</label><input id="EQE_max" type="number" step="1"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div><label>EL min (nm)</label><input id="EL_min" type="number" step="1"></div>
+        <div><label>EL max (nm)</label><input id="EL_max" type="number" step="1"></div>
+      </div>
+      <div class="hint">Drag the vertical range lines directly in the plot. EQE lines are blue; EL lines appear in EQE + EL mode.</div>
+
+      <h2>Optimizer</h2>
+      <label>Temperature T (K)</label>
+      <input id="temperature_K" type="number" step="1" min="1">
+      <label style="margin-top:10px">Residual</label>
+      <select id="residual"><option>Log</option><option>Linear</option></select>
+      <label style="margin-top:10px">Max function evaluations</label>
+      <input id="max_nfev" type="number" step="1000" min="1000">
+
+      <h2>Save</h2>
+      <label>CSV filename prefix</label>
+      <input id="filename_prefix" type="text" placeholder="marcus_ct_fit">
+      <div class="hint">Leave blank to use the default prefix. This field resets when the UI is opened.</div>
+    </aside>
+    <main>
+      <h1>Marcus CT Spectra Fit</h1>
+      <div class="subtitle">Use EQE and electroluminescence spectra with Marcus charge-transfer theory to fit the charge-transfer-state energy and reorganization energy.</div>
+
+      <div class="panel">
+        <div class="params" id="params"></div>
+      </div>
+
+      <div class="toolbar">
+        <button class="primary" id="fit">Fit</button>
+        <button id="save">Save CSV</button>
+        <button id="refresh">Refresh</button>
+      </div>
+
+      <div class="cards" id="cards"></div>
+      <div id="plot"></div>
+      <div class="hint">Reduced spectra use EQE_abs × E and EL_norm / E on one shared y-axis. EQE values above 1 are treated as percent and divided by 100; EL is normalized to its own peak before reduction.</div>
+      <div class="message" id="message"></div>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
