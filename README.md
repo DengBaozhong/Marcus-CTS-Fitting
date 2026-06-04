@@ -18,33 +18,38 @@ E (eV) = 1239.841984 / wavelength (nm)
 
 ## 拟合公式
 
-程序不直接拟合原始 EQE 和 EL 强度，而是先转换为 reduced spectra：
+标准 Marcus CT 拟合通常写成如下形式：
 
 ```text
-EQE_reduced(E) = EQE_abs(E) * E
-EL_reduced(E)  = EL_norm(E) / E
+EQE(E) * E = A_CT * exp[-(E_CT + lambda - E)^2 / (4 * lambda * k_B * T)]
+
+EL(E) / E  = A_CT * exp[-(E_CT - lambda - E)^2 / (4 * lambda * k_B * T)]
 ```
 
 其中：
 
-- `EQE_abs` 是绝对 EQE。如果输入 EQE 最大值大于 1，程序会认为数据单位是百分比，并自动除以 100。
-- `EL_norm` 是归一化 EL 强度。程序会自动除以 EL 最大值，使其最大值为 1。
-
-拟合函数为：
-
-```text
-EQE_reduced_fit(E) = A_CT * exp[-(E_CT + lambda - E)^2 / (4 * lambda * k_B * T)]
-
-EL_reduced_fit(E)  = A_CT * exp[-(E_CT - lambda - E)^2 / (4 * lambda * k_B * T)]
-```
-
-其中：
-
+- `E`：光子能量，单位 eV。
+- `EQE(E)`：绝对 EQE。
+- `EL(E)`：归一化 EL 强度。
 - `E_CT`：CT 态能量，单位 eV。
 - `lambda`：重组能，单位 eV。
-- `A_CT`：共同振幅因子。
+- `A_CT`：强度因子。不同文献中可能会把前因子、归一化常数或跃迁强度写成不同形式，本程序将这些强度相关项统一吸收到 `A_CT` 中。
 - `k_B`：玻尔兹曼常数，`8.617333262145e-5 eV/K`。
 - `T`：温度，默认 `300 K`。
+
+因此，本程序不直接拟合原始 EQE 和 EL 强度，而是先转换为 reduced spectra：
+
+```text
+reduced EQE = EQE_abs(E) * E
+reduced EL  = EL_norm(E) / E
+```
+
+也就是说，`reduced EQE` 和 `reduced EL` 分别对应上面两个 Marcus 拟合公式的等号左边。程序实际拟合的是：
+
+- `EQE_abs * E` 与吸收 Marcus 高斯项；
+- `EL_norm / E` 与发射 Marcus 高斯项。
+
+这里 `EQE_abs` 是绝对 EQE。如果输入 EQE 最大值大于 1，程序会认为数据单位是百分比，并自动除以 100。`EL_norm` 是归一化 EL 强度，程序会自动除以 EL 最大值，使其最大值为 1。
 
 吸收峰中心约位于 `E_CT + lambda`，发射峰中心约位于 `E_CT - lambda`。因此，同时拟合 EQE 和 EL 时，两个谱之间的能量偏移可以帮助约束 `E_CT` 和 `lambda`。
 
@@ -88,7 +93,9 @@ Wavelength (nm),Normalized EL (a.u.)
 
 本项目部署在 Render 等支持 Python 后端的网站上运行。打开网页后即可使用，不需要在个人电脑上安装 Python。
 
-维护者本地调试时可以使用：
+### Local Run
+
+维护者本地调试时，在项目目录中运行：
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -100,6 +107,21 @@ python marcus_ct_webui.py
 ```text
 http://localhost:8502
 ```
+
+### Deploy As A Persistent Web App
+
+GitHub Pages 只能托管静态网页，不能运行本程序所需的 Python 后端和 `scipy` 拟合过程。因此，本项目需要部署到支持 Python Web Service 的平台，例如 Render、Railway、Fly.io 或 Hugging Face Spaces。
+
+#### Render
+
+1. 将本文件夹推送到 GitHub 仓库。
+2. 在 Render 中从该 GitHub 仓库创建一个新的 Web Service。
+3. 使用以下配置：
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `python marcus_ct_webui.py --host 0.0.0.0 --no-browser`
+4. 部署完成后，Render 会提供一个可以长期访问的网页链接。
+
+仓库中包含的 `render.yaml` 也可以作为 Render Blueprint 使用。
 
 ## 使用流程
 
