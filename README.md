@@ -261,6 +261,49 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build_portable_webui.ps1
 
 运行完成后，将生成的 `dist\MarcusCT_WebUI_Portable` 文件夹发给同学即可。这个方式适合不能访问网页版本，或者需要在离线电脑上使用程序的情况。
 
+## 附录：设计规范
+
+项目根目录中的 `DESIGN_SPEC.md` 记录了当前 WebUI 的统一设计规范。后续如果基于本项目衍生其它科研拟合、光谱分析或数据导出工具，建议优先复用其中定义的暗色科研面板风格、颜色语义、布局结构、组件规则和图表规范。
+
+核心原则包括：
+
+- 保持左侧控制栏 + 右侧图表工作区的工具型布局。
+- 使用暗色分析工作台风格，避免营销式页面和大面积装饰。
+- 固定数据颜色语义，例如 EQE 使用蓝色、EL 使用橙色、主操作使用红色。
+- 图表、参数、结果和导出操作应服务于同一条拟合工作流。
+
+## 附录：Render 部署配置
+
+本项目已经包含 Render Blueprint 配置文件 `render.yaml`，可用于在 Render 上创建 Python Web Service。
+
+当前线上 WebUI 地址：
+
+```text
+https://marcus-cts-fitting.onrender.com/
+```
+
+`render.yaml` 中的主要配置如下：
+
+```yaml
+services:
+  - type: web
+    name: marcus-ct-webui
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python marcus_ct_webui.py --host 0.0.0.0 --no-browser
+```
+
+如果在 Render 控制台中手动创建服务，可以使用同样的配置：
+
+- Service type: `Web Service`
+- Environment: `Python`
+- Build command: `pip install -r requirements.txt`
+- Start command: `python marcus_ct_webui.py --host 0.0.0.0 --no-browser`
+- Plan: 可使用 `Free`，也可按访问需求升级。
+
+部署时需要将仓库连接到 Render。Render 会根据 `render.yaml` 或控制台中的设置安装依赖，并运行 `marcus_ct_webui.py` 启动 WebUI。
+
 ## License
 
 This project is released under the MIT License. See `LICENSE` for details.
