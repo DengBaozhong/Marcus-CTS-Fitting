@@ -260,3 +260,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build_portable_webui.ps1
 ```
 
 运行完成后，将生成的 `dist\MarcusCT_WebUI_Portable` 文件夹发给同学即可。这个方式适合不能访问网页版本，或者需要在离线电脑上使用程序的情况。
+
+## License
+
+This project is released under the MIT License. See `LICENSE` for details.
